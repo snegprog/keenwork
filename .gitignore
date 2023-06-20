@@ -5,3 +5,5 @@ public/
 src/Controller/
 src/Test.php
 log/
+config.yaml
+cors.yaml

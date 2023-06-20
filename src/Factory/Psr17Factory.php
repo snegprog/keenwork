@@ -1,12 +1,15 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Keenwork\Factory;
 
+use Keenwork\Request;
+
 class Psr17Factory extends \Slim\Factory\Psr17\Psr17Factory
 {
-    protected static $responseFactoryClass = 'Keenwork\Factory\ResponseFactory';
-    protected static $streamFactoryClass = 'Keenwork\Factory\StreamFactory';
-    protected static $serverRequestCreatorClass = 'Keenwork\Request';
-    protected static $serverRequestCreatorMethod = 'fromGlobals';
+    protected static string $responseFactoryClass = ResponseFactory::class;
+    protected static string $streamFactoryClass = StreamFactory::class;
+    protected static string $serverRequestCreatorClass = Request::class;
+    protected static string $serverRequestCreatorMethod = 'fromGlobals';
 }

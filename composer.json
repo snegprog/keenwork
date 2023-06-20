@@ -1,28 +1,48 @@
 {
     "name": "snegprog/keenwork",
-    "description": "Modern PHP framework for building REST APIs",
-    "type": "library",
-  	"license": "MIT",
-    "keywords": ["php", "api", "framework", "rest-api", "slimphp", "workerman"],
-    "homepage": "https://github.com/snegprog/keenwork",
-    "authors": [{
-   	    "name": "Serge Negrey",
-        "email": "snegprog@gmail.com"
-    }],
+    "description": "long-living php",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Negrey Sergey",
+            "email": "snegproger@yandex.ru"
+        }
+    ],
     "require": {
-        "php": "^7.4",
+        "php": "^8.1",
         "ext-yaml": "*",
         "ext-ev": "*",
         "ext-event": "*",
-        "workerman/workerman": "^4.0",
-        "slim/slim": "^4.5",
-        "php-di/php-di": "^6.2",
-        "guzzlehttp/psr7": "^1.6",
-        "slim/psr7": "^1.2",
+        "cycle/orm": "^2.1",
+        "cycle/annotated": "^3.1",
+        "cycle/migrations": "^3.0",
+        "cycle/schema-migrations-generator": "^2.0",
         "rakit/validation": "^1.4",
-        "monolog/monolog": "^2.1"
+        "guzzlehttp/guzzle": "^7.4",
+        "workerman/workerman": "^4.0",
+        "slim/slim": "^4.10",
+        "php-di/php-di": "^6.4",
+        "guzzlehttp/psr7": "^1.8",
+        "slim/psr7": "^1.5",
+        "monolog/monolog": "^2.5",
+        "phpstan/phpstan": "*",
+        "cycle/entity-behavior": "^1.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "friendsofphp/php-cs-fixer": "^3.8"
     },
     "autoload": {
-        "psr-4": { "Keenwork\\": "src/" }
+        "psr-4": {
+            "Keenwork\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": false
     }
 }

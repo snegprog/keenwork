@@ -28,7 +28,7 @@ class Request extends GuzzleRequest implements ServerRequestInterface
     private $parsedBody;
 
     /**
-     * @var array<string>
+     * @var array<int|string, array<string|int>|string>
      */
     private array $queryParams;
 
@@ -51,7 +51,7 @@ class Request extends GuzzleRequest implements ServerRequestInterface
      * @param array<string, string> $serverParams - Typically the $_SERVER superglobal
      * @param array<int, string> $cookies Request cookies
      * @param UploadedFileInterface[] $files Request files
-     * @param array<string> $query Query Params
+     * @param array<int|string, array<string|int>|string> $query Query Params
      */
     public function __construct(
         string $method,
@@ -121,7 +121,7 @@ class Request extends GuzzleRequest implements ServerRequestInterface
 
     /**
      * {@inheritdoc}
-     * @return array<string>
+     * @return array<int|string, array<string|int>|string>
      */
     public function getQueryParams(): array
     {
@@ -204,7 +204,7 @@ class Request extends GuzzleRequest implements ServerRequestInterface
     /**
      * @param array<string, mixed> $attributes
      */
-    private function setAttributes(array $attributes): self
+    public function setAttributes(array $attributes): self
     {
         $this->attributes = $attributes;
 
@@ -233,7 +233,7 @@ class Request extends GuzzleRequest implements ServerRequestInterface
     }
 
     /**
-     * @param array<string> $queryParams
+     * @param array<int|string, array<string|int>|string> $queryParams
      */
     private function setQueryParams(array $queryParams): self
     {

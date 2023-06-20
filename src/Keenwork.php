@@ -6,7 +6,9 @@ namespace Keenwork;
 
 use Keenwork\Factory\Psr17Factory;
 use Keenwork\Middleware\Middleware;
+use ErrorException;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerInterface;
 use Slim\Factory\AppFactory as SlimFactory;
 use Slim\Factory\Psr17\Psr17FactoryProvider;
@@ -20,12 +22,14 @@ use DI\Container;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
+use function is_string;
+
 class Keenwork
 {
     /**
      * Version Keenwork
      */
-    public const VERSION = '0.3.9';
+    public const VERSION = '0.4.0';
 
     /**
      * WEB Slim App
@@ -88,9 +92,10 @@ class Keenwork
     private bool $dataInitHttp;
 
     /**
-     * @var array<int, array> - array jobs
+     * @var array<int, array{'interval': int, 'job': callable, 'params': string[],
+     *     'init': callable|null, 'name': string, 'workers': int}>
      */
-    private static $jobs = [];
+    private static array $jobs = [];
 
     /**
      * @var array<int, int>
@@ -135,10 +140,10 @@ class Keenwork
 
         $validator = new Validator();
         $validation = $validator->make($config, [
-            'host' => 'ip',
-            'port' => 'integer',
-            'workers' => 'integer',
-            'debug' => 'boolean',
+            'host' => 'required|ip',
+            'port' => 'required|integer',
+            'workers' => 'required|integer',
+            'debug' => 'required|boolean',
         ]);
         $validation->validate();
         if ($validation->fails()) {
@@ -151,10 +156,10 @@ class Keenwork
             throw new \InvalidArgumentException('ERROR: initHttp(): invalid argument(s): ' . $stringErrors . '.');
         }
 
-        $this->setHost($config['host'] ?? '0.0.0.0');
-        $this->setPort($config['port'] ?? 8080);
-        $this->setDebugHttp($config['debug'] ?? false);
-        $this->setWorkersHttp($config['workers'] ?? ((int) shell_exec('nproc')*4));
+        $this->setHost($config['host']);
+        $this->setPort($config['port']);
+        $this->setDebugHttp($config['debug']);
+        $this->setWorkersHttp($config['workers']);
 
         $this->setContainerHttp(new Container());
         $provider = new Psr17FactoryProvider();
@@ -196,8 +201,8 @@ class Keenwork
      *
      * @param int      $interval
      * @param callable $job
-     * @param array<int, array> $params
-     * @param callable $init
+     * @param string[] $params
+     * @param callable|null $init
      * @param int      $workers
      * @param string   $name
      */
@@ -284,7 +289,8 @@ class Keenwork
     }
 
     /**
-     * @return array<int, array>
+     * @return array<int, array{'interval': int, 'job': callable, 'params': string[],
+     *     'init': callable|null, 'name': string, 'workers': int}>
      */
     public static function getJobs(): array
     {
@@ -368,10 +374,11 @@ class Keenwork
      *
      * @param WorkermanRequest $request
      * @return WorkermanResponse
+     * @throws ErrorException
      */
     private function _handle(WorkermanRequest $request): WorkermanResponse
     {
-        if ($request->queryString()) {
+        if ($request->queryString() && is_string($request->queryString())) {
             parse_str($request->queryString(), $queryParams);
         } else {
             $queryParams = [];
@@ -379,7 +386,9 @@ class Keenwork
 
         $req = new Request(
             $request->method(),
-            $request->uri(),
+            ($request->uri() instanceof UriInterface) || is_string($request->uri())
+                ? $request->uri()
+                : throw new ErrorException('Invalid uri'),
             (array)$request->header(),
             (string)$request->rawBody(),
             '1.1',
@@ -451,7 +460,7 @@ class Keenwork
     /**
      * @param LoggerInterface|null $logger
      */
-    private function setLogger(?LoggerInterface $logger): self
+    public function setLogger(?LoggerInterface $logger): self
     {
         $this->logger = $logger;
 
@@ -487,9 +496,10 @@ class Keenwork
     }
 
     /**
-     * @phpstan-param array<int, array{'interval': int, 'job': callable, 'params': array}> $jobs
+     * @param array<int, array{'interval': int, 'job': callable, 'params': string[],
+     *     'init': callable|null, 'name': string, 'workers': int}> $jobs
      */
-    private static function setJobs(array $jobs): void
+    public static function setJobs(array $jobs): void
     {
         self::$jobs = $jobs;
     }
@@ -533,7 +543,7 @@ class Keenwork
     /**
      * @return array<int, int>
      */
-    private function getTimerIDs(): array
+    public function getTimerIDs(): array
     {
         return $this->timerIDs;
     }
@@ -541,7 +551,7 @@ class Keenwork
     /**
      * @param array<int, int> $timerIDs
      */
-    private function setTimerIDs(array $timerIDs): self
+    public function setTimerIDs(array $timerIDs): self
     {
         $this->timerIDs = $timerIDs;
 

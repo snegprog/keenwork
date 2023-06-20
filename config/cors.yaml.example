@@ -1,0 +1,5 @@
+AccessControlAllowOrigin: '*'
+AccessControlAllowMethods: 'GET, POST, PUT, DELETE, PATCH, OPTIONS'
+AccessControlAllowHeaders: 'X-Requested-With, Content-Type, Accept, Origin, Authorization, Set-Cookie'
+AccessControlExposeHeaders: 'Set-Cookie'
+AccessControlAllowCredentials: 'true'

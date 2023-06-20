@@ -1,0 +1,17 @@
+environment: 'dev|prod'
+worker-man:
+  host: '<ip/domain>
+  port: <port>
+content-type: '<Content-Type>'
+databases:
+  default:
+    user: '<username>'
+    password: '<password>'
+    database: '<database>'
+    host: '<host>'
+    port: <port>
+redis:
+  socket: ''
+  host: '<ip/domain>
+  port: <port>
+  password: '<password>'
