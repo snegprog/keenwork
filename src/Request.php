@@ -55,7 +55,7 @@ class Request extends GuzzleRequest implements ServerRequestInterface
      */
     public function __construct(
         string $method,
-        $uri,
+        string|UriInterface $uri,
         array $headers,
         string $body,
         string $version,
@@ -169,36 +169,36 @@ class Request extends GuzzleRequest implements ServerRequestInterface
     /**
      * {@inheritdoc}
      */
-    public function getAttribute($attribute, $default = null)
+    public function getAttribute(string $name, mixed $default = null)
     {
-        if (!isset($this->getAttributes()[$attribute])) {
+        if (!isset($this->getAttributes()[$name])) {
             return $default;
         }
 
-        return $this->getAttributes()[$attribute];
+        return $this->getAttributes()[$name];
     }
 
     /**
      * {@inheritdoc}
      */
-    public function withAttribute($attribute, $value): Request
+    public function withAttribute(string $name, mixed $value): Request
     {
-        if (!is_string($attribute)) {
+        if (!is_string($name)) {
             throw new \InvalidArgumentException('ERROR: Request::withAttribute(): invalid argument [attribute]');
         }
 
-        return (clone $this)->addAttribute($attribute, $value);
+        return (clone $this)->addAttribute($name, $value);
     }
     /**
      * {@inheritdoc}
      */
-    public function withoutAttribute($attribute): self
+    public function withoutAttribute(string $name): self
     {
-        if (!isset($this->getAttributes()[$attribute])) {
+        if (!isset($this->getAttributes()[$name])) {
             return $this;
         }
 
-        return (clone $this)->unsetAttribute($attribute);
+        return (clone $this)->unsetAttribute($name);
     }
 
     /**

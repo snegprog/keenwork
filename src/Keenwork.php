@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 namespace Keenwork;
 
-use Keenwork\Factory\Psr17Factory;
-use Keenwork\Middleware\Middleware;
 use ErrorException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerInterface;
 use Slim\Factory\AppFactory as SlimFactory;
-use Slim\Factory\Psr17\Psr17FactoryProvider;
 use Slim\Exception\HttpNotFoundException;
+use Throwable;
 use Workerman\Worker;
 use Workerman\Protocols\Http\Request as WorkermanRequest;
 use Workerman\Protocols\Http\Response as WorkermanResponse;
 use Slim\App;
-use Rakit\Validation\Validator;
 use DI\Container;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use Workerman\Connection\ConnectionInterface;
 
 use function is_string;
 
@@ -32,64 +30,10 @@ class Keenwork
     public const VERSION = '0.4.0';
 
     /**
-     * WEB Slim App
-     * @var App $slim
-     */
-    private ?App $slim;
-
-    /**
-     * host web server
-     * @var string
-     */
-    private string $hostHttp;
-
-    /**
-     * port web server
-     * @var int
-     */
-    private int $portHttp;
-
-    /**
-     * enable|disable debag mode for workerman
-     * @var bool
-     */
-    private bool $debugHttp;
-
-    /**
-     * logger PSR-3 for Slim
-     * @var LoggerInterface|null
-     */
-    private ?LoggerInterface $logger;
-
-    /**
-     * container PSR-11 for Slim
-     * @var ContainerInterface|null
-     */
-    private ?ContainerInterface $containerHttp;
-
-    /**
      * callable starts when starts worker
      * @var callable|null
      */
     private $callableAtStartHttp;
-
-    /**
-     * Number of workers workerman
-     * @var int
-     */
-    private int $workersHttp;
-
-    /**
-     * working http, flag
-     * @var bool
-     */
-    private bool $workingHttp;
-
-    /**
-     * data initialization http, flag
-     * @var bool
-     */
-    private bool $dataInitHttp;
 
     /**
      * @var array<int, array{'interval': int, 'job': callable, 'params': string[],
@@ -102,73 +46,19 @@ class Keenwork
      */
     private array $timerIDs;
 
-    /**
-     * Keenwork constructor.
-     */
-    public function __construct(LoggerInterface $logger = null)
-    {
-        $this->slim = null;
-        $this->hostHttp = '0.0.0.0';
-        $this->portHttp = 8080;
-        $this->debugHttp = false;
-        $this->logger = $logger;
-        $this->containerHttp = null;
+    public function __construct(
+        private ?App $slim = null,
+        readonly ?LoggerInterface $logger = null,
+        readonly private string $hostHttp = '0.0.0.0',
+        readonly private int $portHttp = 8080,
+        readonly private bool $debugHttp = false,
+        readonly private ContainerInterface $containerHttp = new Container(),
+        readonly private int $workersHttp = 1,
+    ) {
+        $this->slim = $this->slim ?? SlimFactory::create(null, $this->containerHttp);
         $this->callableAtStartHttp = null;
-        $this->workersHttp = 0;
-        $this->workingHttp = false;
-        $this->dataInitHttp = false;
         $this->timerIDs = [];
         Worker::$pidFile = __DIR__ . '/../workerman.pid';
-    }
-
-    /**
-     * Init http server
-     * @psalm-param  array{'debug': bool, 'host': string, 'port': int, 'workers': int} $config
-     */
-    public function initHttp(array $config): void
-    {
-        if ($this->isDataInitHttp()) {
-            echo "You can't initialize data http twice\n";
-
-            return;
-        }
-        if ($this->isWorkingHttp()) {
-            echo "You can't initialize data http while the server is running\n";
-
-            return;
-        }
-
-        $validator = new Validator();
-        $validation = $validator->make($config, [
-            'host' => 'required|ip',
-            'port' => 'required|integer',
-            'workers' => 'required|integer',
-            'debug' => 'required|boolean',
-        ]);
-        $validation->validate();
-        if ($validation->fails()) {
-            $stringErrors = '[';
-            foreach ($validation->errors()->toArray() as $key => $error) {
-                $stringErrors .= ' ' .$key . ' ';
-            }
-            $stringErrors .= ']';
-
-            throw new \InvalidArgumentException('ERROR: initHttp(): invalid argument(s): ' . $stringErrors . '.');
-        }
-
-        $this->setHost($config['host']);
-        $this->setPort($config['port']);
-        $this->setDebugHttp($config['debug']);
-        $this->setWorkersHttp($config['workers']);
-
-        $this->setContainerHttp(new Container());
-        $provider = new Psr17FactoryProvider();
-        $provider::setFactories([Psr17Factory::class]);
-        SlimFactory::setPsr17FactoryProvider($provider);
-        $this->setSlim(SlimFactory::create(null, $this->getContainerHttp()));
-        $this->getSlim()->add(new Middleware());
-
-        $this->setDataInitHttp(true);
     }
 
     /**
@@ -225,24 +115,19 @@ class Keenwork
     }
 
     /**
-     * Run all servers Keenwork
+     * Run all servers
+     * @param Keenwork $keenwork
+     * @throws Throwable
      */
-    public static function runAll(Keenwork ...$keenworks): void
+    public static function runAll(Keenwork $keenwork): void
     {
-        $start = true;
         try {
-            foreach ($keenworks as $keenwork) {
-                $keenwork->initRun();
-            }
+            $keenwork->initRun();
         } catch (\Throwable $e) {
             echo $e->getMessage() . "\n";
-            $start = false;
-        }
-
-        if (!$start) {
             echo "ERROR: Failed to start server\n";
 
-            return;
+            throw $e;
         }
 
         Worker::runAll();
@@ -347,11 +232,11 @@ class Keenwork
         }
 
         /** Main Http */
-        $worker->onMessage = function ($connection, WorkermanRequest $request) {
+        $worker->onMessage = function (ConnectionInterface $connection, WorkermanRequest $request) {
             try {
                 $response = $this->_handle($request);
                 $connection->send($response);
-            } catch (HttpNotFoundException $error) {
+            } catch (HttpNotFoundException) {
                 $connection->send(new WorkermanResponse(Response::HTTP_NOT_FOUND));
             } catch (\Throwable $error) {
                 if ($this->isDebugHttp()) {
@@ -365,8 +250,6 @@ class Keenwork
                 $connection->send(new WorkermanResponse(Response::HTTP_INTERNAL_SERVER_ERROR));
             }
         };
-
-        $this->setWorkingHttp(true);
     }
 
     /**
@@ -389,9 +272,9 @@ class Keenwork
             ($request->uri() instanceof UriInterface) || is_string($request->uri())
                 ? $request->uri()
                 : throw new ErrorException('Invalid uri'),
-            (array)$request->header(),
-            (string)$request->rawBody(),
-            '1.1',
+            (array) $request->header(),
+            $request->rawBody(),
+            (string) Config::get('http_protocol_version'),
             $_SERVER,
             (array)$request->cookie(),
             (array)$request->file(),
@@ -418,126 +301,12 @@ class Keenwork
     }
 
     /**
-     * @param App $slim
-     */
-    private function setSlim(App $slim): self
-    {
-        $this->slim = $slim;
-
-        return $this;
-    }
-
-    /**
-     * @param string $host
-     */
-    private function setHost(string $host): self
-    {
-        $this->hostHttp = $host;
-
-        return $this;
-    }
-
-    /**
-     * @param int $port
-     */
-    private function setPort(int $port): self
-    {
-        $this->portHttp = $port;
-
-        return $this;
-    }
-
-    /**
-     * @param bool $debug
-     */
-    private function setDebugHttp(bool $debug): self
-    {
-        $this->debugHttp = $debug;
-
-        return $this;
-    }
-
-    /**
-     * @param LoggerInterface|null $logger
-     */
-    public function setLogger(?LoggerInterface $logger): self
-    {
-        $this->logger = $logger;
-
-        return $this;
-    }
-
-    /**
-     * @return ContainerInterface|null
-     */
-    private function getContainerHttp(): ?ContainerInterface
-    {
-        return $this->containerHttp;
-    }
-
-    /**
-     * @param ContainerInterface $container
-     */
-    private function setContainerHttp(ContainerInterface $container): self
-    {
-        $this->containerHttp = $container;
-
-        return $this;
-    }
-
-    /**
-     * @param int $workers
-     */
-    private function setWorkersHttp(int $workers): self
-    {
-        $this->workersHttp = $workers;
-
-        return $this;
-    }
-
-    /**
      * @param array<int, array{'interval': int, 'job': callable, 'params': string[],
      *     'init': callable|null, 'name': string, 'workers': int}> $jobs
      */
     public static function setJobs(array $jobs): void
     {
         self::$jobs = $jobs;
-    }
-
-    /**
-     * @return bool
-     */
-    private function isWorkingHttp(): bool
-    {
-        return $this->workingHttp;
-    }
-
-    /**
-     * @param bool $workingHttp
-     */
-    private function setWorkingHttp(bool $workingHttp): self
-    {
-        $this->workingHttp = $workingHttp;
-
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    private function isDataInitHttp(): bool
-    {
-        return $this->dataInitHttp;
-    }
-
-    /**
-     * @param bool $dataInitHttp
-     */
-    private function setDataInitHttp(bool $dataInitHttp): self
-    {
-        $this->dataInitHttp = $dataInitHttp;
-
-        return $this;
     }
 
     /**

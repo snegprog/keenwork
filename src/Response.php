@@ -4,19 +4,8 @@ declare(strict_types=1);
 
 namespace Keenwork;
 
-use GuzzleHttp\Psr7\Utils;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
-use GuzzleHttp\Psr7\MessageTrait;
-use GuzzleHttp\Psr7\Response as GuzzleResponse;
-
-/**
- * Response implementation ResponseInterface
- */
-class Response extends GuzzleResponse implements ResponseInterface
+class Response
 {
-    use MessageTrait;
-
     public const HTTP_CONTINUE = 100;
     public const HTTP_SWITCHING_PROTOCOLS = 101;
     public const HTTP_PROCESSING = 102;            // RFC2518
@@ -80,64 +69,4 @@ class Response extends GuzzleResponse implements ResponseInterface
     public const HTTP_LOOP_DETECTED = 508;                                               // RFC5842
     public const HTTP_NOT_EXTENDED = 510;                                                // RFC2774
     public const HTTP_NETWORK_AUTHENTICATION_REQUIRED = 511;                             // RFC6585
-
-    /**
-     * @param int                                  $status  Status code
-     * @param array<string, string>                $headers Response headers
-     * @param string|null|resource|StreamInterface $body    Response body
-     * @param string                               $version Protocol version
-     * @param string                               $reason  Reason phrase
-     */
-    public function __construct(
-        int $status = 200,
-        array $headers = [],
-        $body = null,
-        string $version = '1.1',
-        string $reason = ''
-    ) {
-        parent::__construct($status, $headers, $body, $version, $reason);
-    }
-
-    /**
-     * Smart method returns right type of Response for any type of content
-     * NB! We expect that 'Content-Type' => 'text/plain' will be set up
-     * by Keenwork at the last step of the response emitting if needed
-     *
-     * @param array<string>|object|string $body Response body as array, object or string
-     * @param int $status Optional HTTP Status
-     * @return Response Keenwork PSR-7 HTTP Response
-     */
-    public function with($body, int $status = 200): Response
-    {
-        $resultBody = null;
-
-        if (is_string($body)) {
-            $resultBody = $body;
-        }
-
-        if (is_array($body) || is_object($body)) {
-            $resultBody = json_encode($body);
-            if ($resultBody === false) {
-                throw new \RuntimeException(json_last_error_msg(), json_last_error());
-            }
-        }
-
-        if (is_numeric($body)) {
-            $resultBody = (string) $body;
-        }
-
-        $response = $this->withBody(Utils::streamFor($resultBody))->withStatus($status);
-
-        return $response;
-    }
-
-    /**
-     * @param int $code
-     * @param string $reasonPhrase
-     * @return Response
-     */
-    public function withStatus($code, $reasonPhrase = ''): Response
-    {
-        return parent::withStatus($code, $reasonPhrase);
-    }
 }
