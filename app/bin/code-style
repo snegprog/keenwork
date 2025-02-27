@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+if [[ $1 == 'fix' ]]
+then
+  FIX='fix'
+else
+  FIX=''
+fi
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd $SCRIPT_DIR/../../docker
+
+docker compose run --rm  php bash -c 'PHP_CS_FIXER_IGNORE_ENV=1 php ./cs-fixer-script.php '$FIX
+
+if [ $? -eq 0 ]
+then
+  echo "Successful checks PHP-CS-FIXER"
+  exit 0
+else
+  echo "ERRORS script PHP-CS-FIXER" >&2
+  exit 1
+fi

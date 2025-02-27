@@ -1,0 +1,40 @@
+name: 'keenwork'
+
+services:
+  web:
+    build: nginx
+    container_name: web
+    restart: always
+    ports:
+      - 80:80
+    volumes:
+      - ../app:/var/www/app
+      - ./nginx/conf/nginx/app.conf:/etc/nginx/conf.d/app.conf
+  php:
+    build: php
+    container_name: php
+    restart: always
+    depends_on:
+      - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../app:/var/www/app
+      - ./php/conf/php.ini:/usr/local/etc/php/php.ini
+  db:
+    image: postgres:15-alpine
+    container_name: db
+    restart: always
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: "keenwork"
+      POSTGRES_USER: "keenwork"
+      POSTGRES_PASSWORD: "keenwork"
+      TZ: "Europe/Moscow"
+      PGTZ: "Europe/Moscow"
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=ru_RU.UTF-8 --lc-ctype=ru_RU.UTF-8'
+  redis:
+    image: redis:7.0-alpine3.18
+    container_name: redis
+    restart: always

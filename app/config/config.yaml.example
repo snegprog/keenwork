@@ -1,0 +1,18 @@
+environment: 'dev'
+worker-man:
+  host: '0.0.0.0'
+  port: 8083
+databases:
+  default:
+    user: 'keenwork'
+    password: 'keenwork'
+    database: 'keenwork'
+    host: 'db'
+    port: 5432
+redis:
+  socket: ''
+  host: 'redis'
+  port: 6379
+  password: ''
+http_protocol_version: "1.1"
+

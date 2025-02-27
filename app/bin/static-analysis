@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd $SCRIPT_DIR/../../docker
+docker compose run --rm  php bash -c 'vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=4000M'
+
+if [[ $? == 0 ]]
+then
+  echo "Successful checks PHPStan"
+  exit 0
+else
+  echo "ERRORS script PHPStan"
+  exit 1
+fi

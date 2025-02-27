@@ -1,0 +1,43 @@
+openapi: 3.0.0
+info:
+  title: Keenwork
+  description: Keenwork.
+  version: 0.0.1
+servers:
+  - url: http://keenwork.local/v1
+    description: Сервис keenwork
+paths:
+  /info/{path_argument}:
+    get:
+      tags:
+        - Info
+      summary: Информация о работе сервиса
+      description: Выводит информацию о работе сервиса
+      parameters:
+        - in: path
+          name: path_argument
+          schema:
+            type: string
+          required: true
+          description: 'Любая строка, служит для проверки, что контроллер получает параметры из path'
+      responses:
+        '200':
+          description: JSON массив данных о подключениях сервиса к различным иным сервисам
+          content:
+            application/json:
+              schema:
+                properties:
+                  path_argument:
+                    type: string
+                  keenwork:
+                    type: string
+                    example: '0.6.0'
+                  php:
+                    type: string
+                    example: '8.2.11'
+                  redis_connect:
+                    type: boolean
+                    example: true
+                  db_connect:
+                    type: boolean
+                    example: true

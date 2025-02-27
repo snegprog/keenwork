@@ -1,0 +1,47 @@
+{
+    "name": "stream-developers/bonus-api",
+    "description": "long-living php",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Negrej Sergej",
+            "email": "sanegrej1@mts.ru"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "ext-yaml": "*",
+        "ext-ev": "*",
+        "ext-event": "*",
+        "ext-pgsql": "*",
+        "ext-pcntl": "*",
+        "ext-redis":  "*",
+        "guzzlehttp/guzzle": "^7.7",
+        "workerman/workerman": "^4.0",
+        "slim/slim": "^4.12",
+        "php-di/php-di": "^7.0",
+        "guzzlehttp/psr7": "^1.8",
+        "slim/psr7": "^1.5",
+        "monolog/monolog": "^3.4",
+        "dragonmantank/cron-expression": "^3.3",
+        "cycle/orm": "^2.7",
+        "cycle/annotated": "^4.1",
+        "cycle/entity-behavior": "^1.3",
+        "cycle/entity-behavior-uuid": "^1.2",
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.3",
+        "phpstan/phpstan": "^1.10",
+        "friendsofphp/php-cs-fixer": "^3.22"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\Tests\\": "tests/"
+        }
+    }
+}
